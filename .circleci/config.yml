@@ -19,6 +19,13 @@ jobs:
             rustup default nightly
             rustup update
       - run:
+          name: c dependencies
+          command: |
+            apt update
+            apt install cmake -y
+            apt install libclang-dev -y
+            apt install libboost-dev -y
+      - run:
           name: test
           command: cargo test --workspace
 
