@@ -167,3 +167,11 @@ contract GuestBook:
     pub def get_msg(addr: address) -> BookMsg:
         return self.guest_book[addr]
 "# }
+
+test_parse! { invalid_parse, module::parse_module, r#"
+contract o
+    my_sto_tuple:(u256,i32)
+    pub def e->(u256,bool,address)
+        m:u256=self.my_sto_tuple.m
+        return
+"# }
