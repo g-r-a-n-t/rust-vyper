@@ -1,5 +1,6 @@
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
+use crate::types::{to_abi_types, AbiType};
 use fe_abi::utils as abi_utils;
 use fe_analyzer::context::FunctionAttributes;
 use fe_analyzer::namespace::types::{AbiDecodeLocation, AbiEncoding, FixedSize};
@@ -33,7 +34,7 @@ fn dispatch_arm(attributes: FunctionAttributes) -> yul::Case {
         statements! {}
     } else {
         let decode_expr = abi_operations::decode_data(
-            &attributes.param_types(),
+            &to_abi_types(&attributes.param_types()),
             expression! { 4 },
             expression! { calldatasize() },
             AbiDecodeLocation::Calldata,
@@ -53,11 +54,11 @@ fn dispatch_arm(attributes: FunctionAttributes) -> yul::Case {
             }
         } else {
             let encode_expr = abi_operations::encode(
-                &[attributes.return_type.clone()],
+                &[AbiType::from(&attributes.return_type)],
                 expressions! { return_val },
             );
             let encoding_size = abi_operations::encoding_size(
-                &[attributes.return_type],
+                &[AbiType::from(&attributes.return_type)],
                 expressions! { return_val },
             );
             statements! {

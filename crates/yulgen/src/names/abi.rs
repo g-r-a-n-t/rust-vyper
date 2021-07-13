@@ -1,17 +1,19 @@
-use fe_analyzer::namespace::types::{abi_types, AbiDecodeLocation, AbiEncoding, AbiType};
+use crate::types::AbiType;
+use fe_analyzer::namespace::types::AbiDecodeLocation;
+use std::borrow::Borrow;
 use yultsur::*;
 
 /// Generates an ABI encoding function name for a given set of types.
-pub fn encode<T: AbiEncoding>(_types: &[T]) -> yul::Identifier {
-    let name = format!("abi_encode_{}", types(&abi_types(_types)));
+pub fn encode(_types: &[AbiType]) -> yul::Identifier {
+    let name = format!("abi_encode_{}", types(_types));
 
     identifier! { (name) }
 }
 
-pub fn decode_data<T: AbiEncoding>(_types: &[T], location: AbiDecodeLocation) -> yul::Identifier {
+pub fn decode_data(_types: &[AbiType], location: AbiDecodeLocation) -> yul::Identifier {
     let name = format!(
         "abi_decode_data_{}_{}",
-        types(&abi_types(_types)),
+        types(_types),
         decode_location(location)
     );
 

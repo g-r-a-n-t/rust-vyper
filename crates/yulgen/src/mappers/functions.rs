@@ -3,9 +3,10 @@ use crate::mappers::{assignments, declarations, expressions};
 use crate::names;
 use crate::operations::abi as abi_operations;
 use crate::operations::data as data_operations;
+use crate::types::{to_abi_types, AbiType, EvmSized};
 use crate::Context;
 use fe_analyzer::context::ExpressionAttributes;
-use fe_analyzer::namespace::types::{FeSized, FixedSize, Type};
+use fe_analyzer::namespace::types::{FixedSize, Type};
 use fe_parser::ast as fe;
 use fe_parser::node::Node;
 use yultsur::*;
@@ -132,7 +133,8 @@ fn revert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
                 context.revert_errors.insert(val.clone());
 
                 let revert_data = expressions::expr(context, error_expr);
-                let size = abi_operations::encoding_size(&[val.clone()], vec![revert_data.clone()]);
+                let size =
+                    abi_operations::encoding_size(&[AbiType::from(val)], vec![revert_data.clone()]);
                 let revert_fn = names::revert_name(&val.name, &val.get_field_types());
 
                 return statement! {
@@ -177,7 +179,8 @@ fn assert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
                     .expect("missing expression");
 
                 if let Type::String(str) = &msg_attributes.typ {
-                    let size = abi_operations::encoding_size(&[str.clone()], vec![msg.clone()]);
+                    let size =
+                        abi_operations::encoding_size(&[AbiType::from(str)], vec![msg.clone()]);
                     let fixed_size = FixedSize::String(str.clone());
                     context.assert_strings.insert(str.clone());
                     let revert_fn = names::error_revert_name(&[fixed_size]);

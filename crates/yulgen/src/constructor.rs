@@ -1,5 +1,6 @@
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
+use crate::types::to_abi_types;
 use fe_analyzer::namespace::types::{AbiDecodeLocation, FixedSize};
 use yultsur::*;
 
@@ -31,7 +32,7 @@ pub fn build_with_init(
         statements! {}
     } else {
         let decode_expr = abi_operations::decode_data(
-            &init_params,
+            &to_abi_types(&init_params),
             expression! { params_start_mem },
             expression! { params_end_mem },
             AbiDecodeLocation::Memory,

@@ -24,68 +24,6 @@ pub fn i256_min() -> BigInt {
     BigInt::from(-2).pow(255)
 }
 
-/// The type has a constant size known to the compiler.
-pub trait FeSized {
-    /// Constant size of the type.
-    fn size(&self) -> usize;
-}
-
-/// ABI types given in the Solidity specification with some extra information needed to inform
-/// generation of encoding/decoding functions.
-#[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq)]
-pub enum AbiType {
-    StaticArray { inner: Box<AbiType>, size: usize },
-    Tuple { components: Vec<AbiType> },
-    Uint { size: usize },
-    Int { size: usize },
-    Bool,
-    Address,
-    String { max_size: usize },
-    Bytes { size: usize },
-}
-
-impl AbiType {
-    /// The number of bytes used to encode the type's head.
-    pub fn head_size(&self) -> usize {
-        match self {
-            AbiType::StaticArray { size, .. } => 32 * size,
-            AbiType::Tuple { components } => 32 * components.len(),
-            AbiType::Uint { .. } => 32,
-            AbiType::Int { .. } => 32,
-            AbiType::Bool => 32,
-            AbiType::Address => 32,
-            AbiType::String { .. } => 32,
-            AbiType::Bytes { .. } => 32,
-        }
-    }
-
-    /// The number of bytes used in Fe's data layout. This is used when packing and unpacking
-    /// arrays.
-    pub fn packed_size(&self) -> usize {
-        match *self {
-            AbiType::Uint { size } => size,
-            AbiType::Int { size } => size,
-            AbiType::Bool => 1,
-            AbiType::Address => 32,
-            _ => todo!("recursive encoding"),
-        }
-    }
-
-    /// `true` if the encoded value is stored in the data section, `false` if it is not.
-    pub fn has_data(&self) -> bool {
-        match self {
-            AbiType::Uint { .. } => false,
-            AbiType::StaticArray { .. } => false,
-            AbiType::Tuple { .. } => false,
-            AbiType::Int { .. } => false,
-            AbiType::Bool => false,
-            AbiType::Address => false,
-            AbiType::String { .. } => true,
-            AbiType::Bytes { .. } => true,
-        }
-    }
-}
-
 /// Data can be decoded from memory or calldata.
 #[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Copy)]
 pub enum AbiDecodeLocation {
@@ -112,13 +50,6 @@ pub trait AbiEncoding {
 
     /// The components of an ABI tuple.
     fn abi_components(&self) -> Vec<AbiComponent>;
-
-    /// The ABI type of a Fe type.
-    fn abi_type(&self) -> AbiType;
-}
-
-pub fn abi_types<T: AbiEncoding>(types: &[T]) -> Vec<AbiType> {
-    types.iter().map(|typ| typ.abi_type()).collect()
 }
 
 /// Names that can be used to build identifiers without collision.
@@ -262,6 +193,23 @@ impl Integer {
                 | Integer::I16
                 | Integer::I8
         )
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            Integer::U256 => 32,
+            Integer::U128 => 16,
+            Integer::U64 => 8,
+            Integer::U32 => 4,
+            Integer::U16 => 2,
+            Integer::U8 => 1,
+            Integer::I256 => 32,
+            Integer::I128 => 16,
+            Integer::I64 => 8,
+            Integer::I32 => 4,
+            Integer::I16 => 2,
+            Integer::I8 => 1,
+        }
     }
 
     /// Returns `true` if the integer is at least the same size (or larger) than
@@ -464,79 +412,6 @@ impl From<Tuple> for FixedSize {
     }
 }
 
-impl FeSized for FixedSize {
-    fn size(&self) -> usize {
-        match self {
-            FixedSize::Base(base) => base.size(),
-            FixedSize::Array(array) => array.size(),
-            FixedSize::Tuple(tuple) => tuple.size(),
-            FixedSize::String(string) => string.size(),
-            FixedSize::Contract(contract) => contract.size(),
-            FixedSize::Struct(val) => val.size(),
-        }
-    }
-}
-
-impl FeSized for Integer {
-    fn size(&self) -> usize {
-        match self {
-            Integer::U8 => 1,
-            Integer::U16 => 2,
-            Integer::U32 => 4,
-            Integer::U64 => 8,
-            Integer::U128 => 16,
-            Integer::U256 => 32,
-            Integer::I8 => 1,
-            Integer::I16 => 2,
-            Integer::I32 => 4,
-            Integer::I64 => 8,
-            Integer::I128 => 16,
-            Integer::I256 => 32,
-        }
-    }
-}
-
-impl FeSized for Base {
-    fn size(&self) -> usize {
-        match self {
-            Base::Numeric(integer) => integer.size(),
-            Base::Bool => 1,
-            Base::Address => 32,
-            Base::Unit => 0,
-        }
-    }
-}
-
-impl FeSized for Array {
-    fn size(&self) -> usize {
-        self.size * self.inner.size()
-    }
-}
-
-impl FeSized for Tuple {
-    fn size(&self) -> usize {
-        self.items.iter().map(|typ| typ.size()).sum()
-    }
-}
-
-impl FeSized for Struct {
-    fn size(&self) -> usize {
-        self.fields.len() * 32
-    }
-}
-
-impl FeSized for FeString {
-    fn size(&self) -> usize {
-        self.max_size + 32
-    }
-}
-
-impl FeSized for Contract {
-    fn size(&self) -> usize {
-        32
-    }
-}
-
 impl AbiEncoding for FixedSize {
     fn abi_json_name(&self) -> String {
         match self {
@@ -570,17 +445,6 @@ impl AbiEncoding for FixedSize {
             FixedSize::Struct(val) => val.abi_components(),
         }
     }
-
-    fn abi_type(&self) -> AbiType {
-        match self {
-            FixedSize::Base(base) => base.abi_type(),
-            FixedSize::Array(array) => array.abi_type(),
-            FixedSize::Tuple(tuple) => tuple.abi_type(),
-            FixedSize::String(string) => string.abi_type(),
-            FixedSize::Contract(contract) => contract.abi_type(),
-            FixedSize::Struct(val) => val.abi_type(),
-        }
-    }
 }
 
 impl AbiEncoding for Base {
@@ -611,22 +475,6 @@ impl AbiEncoding for Base {
     fn abi_components(&self) -> Vec<AbiComponent> {
         vec![]
     }
-
-    fn abi_type(&self) -> AbiType {
-        match self {
-            Base::Numeric(integer) => {
-                let size = integer.size();
-                if integer.is_signed() {
-                    AbiType::Int { size }
-                } else {
-                    AbiType::Uint { size }
-                }
-            }
-            Base::Address => AbiType::Address,
-            Base::Bool => AbiType::Bool,
-            Base::Unit => panic!("unit type is not abi encodable"),
-        }
-    }
 }
 
 impl AbiEncoding for Array {
@@ -644,17 +492,6 @@ impl AbiEncoding for Array {
 
     fn abi_components(&self) -> Vec<AbiComponent> {
         vec![]
-    }
-
-    fn abi_type(&self) -> AbiType {
-        if matches!(self.inner, Base::Numeric(Integer::U8)) {
-            AbiType::Bytes { size: self.size }
-        } else {
-            AbiType::StaticArray {
-                inner: Box::new(self.inner.abi_type()),
-                size: self.size,
-            }
-        }
     }
 }
 
@@ -682,12 +519,6 @@ impl AbiEncoding for Struct {
                 components: vec![],
             })
             .collect()
-    }
-
-    fn abi_type(&self) -> AbiType {
-        AbiType::Tuple {
-            components: self.fields.iter().map(|(_, typ)| typ.abi_type()).collect(),
-        }
     }
 }
 
@@ -717,12 +548,6 @@ impl AbiEncoding for Tuple {
             })
             .collect()
     }
-
-    fn abi_type(&self) -> AbiType {
-        AbiType::Tuple {
-            components: self.items.iter().map(|typ| typ.abi_type()).collect(),
-        }
-    }
 }
 
 impl AbiEncoding for Contract {
@@ -737,10 +562,6 @@ impl AbiEncoding for Contract {
     fn abi_components(&self) -> Vec<AbiComponent> {
         unimplemented!()
     }
-
-    fn abi_type(&self) -> AbiType {
-        unimplemented!();
-    }
 }
 
 impl AbiEncoding for FeString {
@@ -754,12 +575,6 @@ impl AbiEncoding for FeString {
 
     fn abi_components(&self) -> Vec<AbiComponent> {
         vec![]
-    }
-
-    fn abi_type(&self) -> AbiType {
-        AbiType::String {
-            max_size: self.max_size,
-        }
     }
 }
 

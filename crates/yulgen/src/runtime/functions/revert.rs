@@ -1,5 +1,6 @@
 use crate::names;
 use crate::names::abi as abi_names;
+use crate::types::to_abi_types;
 use fe_abi::utils as abi_utils;
 use fe_analyzer::namespace::types::{AbiEncoding, FixedSize, Struct, U256};
 use yultsur::*;
@@ -46,7 +47,7 @@ pub fn generate_revert_fn(
     encoding_params: &[FixedSize],
     selector_params: &[FixedSize],
 ) -> yul::Statement {
-    let abi_encode_fn = abi_names::encode(encoding_params);
+    let abi_encode_fn = abi_names::encode(&to_abi_types(&encoding_params));
 
     let function_name = names::revert_name(name, selector_params);
 

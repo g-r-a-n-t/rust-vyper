@@ -2,8 +2,9 @@ use crate::constants::PANIC_INVALID_ABI_DATA;
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
 use crate::operations::abi::EncodingSize;
+use crate::types::AbiType;
 use crate::utils::ceil_32;
-use fe_analyzer::namespace::types::{AbiDecodeLocation, AbiEncoding, AbiType};
+use fe_analyzer::namespace::types::AbiDecodeLocation;
 use yultsur::*;
 
 /// Return all abi runtime functions
@@ -14,7 +15,7 @@ pub fn all() -> Vec<yul::Statement> {
 /// Creates a batch of encoding function for the given type arrays.
 ///
 /// It sorts the functions and removes duplicates.
-pub fn batch_encode<T: AbiEncoding>(batch: Vec<Vec<T>>) -> Vec<yul::Statement> {
+pub fn batch_encode(batch: Vec<Vec<AbiType>>) -> Vec<yul::Statement> {
     let mut yul_functions: Vec<_> = batch.into_iter().map(encode).collect();
     yul_functions.sort();
     yul_functions.dedup();
@@ -25,9 +26,7 @@ pub fn batch_encode<T: AbiEncoding>(batch: Vec<Vec<T>>) -> Vec<yul::Statement> {
 /// locations.
 ///
 /// It sorts the functions and removes duplicates.
-pub fn batch_decode<T: AbiEncoding + Clone>(
-    data_batch: Vec<(Vec<T>, AbiDecodeLocation)>,
-) -> Vec<yul::Statement> {
+pub fn batch_decode(data_batch: Vec<(Vec<AbiType>, AbiDecodeLocation)>) -> Vec<yul::Statement> {
     let component_batch = data_batch
         .iter()
         .fold(vec![], |mut accum, (types, location)| {
@@ -44,8 +43,10 @@ pub fn batch_decode<T: AbiEncoding + Clone>(
     let component_functions: Vec<_> = component_batch
         .into_iter()
         .map(|(typ, location)| {
-            let top_function = decode_component(&typ.abi_type(), location);
-            let inner_functions = match &typ.abi_type() {
+            let typ: AbiType = typ.into();
+            let top_function = decode_component(&typ, location);
+
+            let inner_functions = match &typ {
                 AbiType::Tuple { components } => components
                     .iter()
                     .map(|typ| decode_component(typ, location))
@@ -66,7 +67,7 @@ pub fn batch_decode<T: AbiEncoding + Clone>(
 }
 
 /// Creates a function that decodes ABI encoded data.
-pub fn decode_data<T: AbiEncoding>(types: &[T], location: AbiDecodeLocation) -> yul::Statement {
+pub fn decode_data(types: &[AbiType], location: AbiDecodeLocation) -> yul::Statement {
     #[derive(Clone)]
     struct IdentExpr {
         ident: yul::Identifier,
@@ -103,7 +104,6 @@ pub fn decode_data<T: AbiEncoding>(types: &[T], location: AbiDecodeLocation) -> 
         .iter()
         .enumerate()
         .map(|(i, typ)| {
-            let typ = typ.abi_type();
             let data_offsets = if typ.has_data() {
                 Some(DataOffsets {
                     start: format!("data_start_offset_{}", i).into(),
@@ -114,7 +114,7 @@ pub fn decode_data<T: AbiEncoding>(types: &[T], location: AbiDecodeLocation) -> 
             };
 
             DecodeVal {
-                typ,
+                typ: typ.to_owned(),
                 return_val: format!("return_val_{}", i).into(),
                 decoded_val: format!("decoded_val_{}", i).into(),
                 head_offset: format!("head_offset_{}", i).into(),
@@ -519,7 +519,7 @@ pub fn unpack() -> yul::Statement {
 }
 
 /// Generates an encoding function for any set of type parameters.
-pub fn encode<T: AbiEncoding>(types: Vec<T>) -> yul::Statement {
+pub fn encode(types: Vec<AbiType>) -> yul::Statement {
     let func_name = abi_names::encode(&types);
 
     // Create names for each of the values we're encoding.
@@ -530,24 +530,24 @@ pub fn encode<T: AbiEncoding>(types: Vec<T>) -> yul::Statement {
     let head_encode_stmts: Vec<_> = typed_params
         .clone()
         .into_iter()
-        .map(|(typ, param)| match typ.abi_type() {
-            AbiType::StaticArray { inner, size } => encode_static_array(param, *inner, size),
+        .map(|(typ, param)| match typ {
+            AbiType::StaticArray { inner, size } => encode_static_array(param, inner, *size),
             AbiType::Tuple { components } => encode_tuple(param, components),
             AbiType::Uint { .. } => encode_uint(param),
             AbiType::Int { .. } => encode_uint(param),
             AbiType::Bool => encode_uint(param),
             AbiType::Address => encode_uint(param),
             AbiType::String { .. } => encode_string_head(param),
-            AbiType::Bytes { size } => encode_bytes_head(size),
+            AbiType::Bytes { size } => encode_bytes_head(*size),
         })
         .collect();
 
     // Encode the data section of each component with dynamically-sized data.
     let data_encode_stmts: Vec<_> = typed_params
         .into_iter()
-        .filter_map(|(typ, param)| match typ.abi_type() {
+        .filter_map(|(typ, param)| match typ {
             AbiType::String { .. } => Some(encode_string_data(param)),
-            AbiType::Bytes { size } => Some(encode_bytes_data(size, param)),
+            AbiType::Bytes { size } => Some(encode_bytes_data(*size, param)),
             _ => None,
         })
         .collect();
@@ -564,8 +564,8 @@ pub fn encode<T: AbiEncoding>(types: Vec<T>) -> yul::Statement {
     }
 }
 
-fn encode_tuple(val: yul::Expression, elems: Vec<AbiType>) -> yul::Statement {
-    let tuple_size = elems.len() * 32;
+fn encode_tuple(val: yul::Expression, components: &[AbiType]) -> yul::Statement {
+    let tuple_size = components.len() * 32;
     let tuple_size = literal_expression! { (tuple_size) };
     statement! { pop((mcopym([val], [tuple_size]))) }
 }
@@ -614,7 +614,7 @@ fn encode_bytes_data(size: usize, ptr: yul::Expression) -> yul::Statement {
     }
 }
 
-fn encode_static_array(val: yul::Expression, inner: AbiType, size: usize) -> yul::Statement {
+fn encode_static_array(val: yul::Expression, inner: &AbiType, size: usize) -> yul::Statement {
     abi_operations::unpack(
         val,
         literal_expression! { (size) },

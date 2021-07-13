@@ -1,7 +1,7 @@
 use fe_analyzer::context::FunctionAttributes;
 use fe_analyzer::namespace::events::EventDef;
 use fe_analyzer::namespace::types::{
-    AbiDecodeLocation, AbiType, Array, Base, FeString, FixedSize, Integer, Struct, U256,
+    AbiDecodeLocation, Base, FeString, FixedSize, Integer, Struct, U256,
 };
 use fe_yulgen::constructor;
 use fe_yulgen::names::abi as abi_names;
@@ -10,6 +10,7 @@ use fe_yulgen::runtime::abi_dispatcher;
 use fe_yulgen::runtime::functions::{
     abi as abi_functions, revert as revert_functions, structs as structs_functions,
 };
+use fe_yulgen::types::AbiType;
 use insta::assert_display_snapshot;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yultsur::*;
@@ -66,23 +67,23 @@ test_yulgen! { abi_dispatcher,  abi_dispatcher::dispatcher(&function_attributes(
 // ABI encoding functions
 test_yulgen! {
     abi_encode_u256_address_function,
-    abi_functions::encode(vec![U256, Base::Address])
+    abi_functions::encode(vec![AbiType::Uint { size: 32 }, AbiType::Address])
 }
 
 // ABI decoding functions
 test_yulgen! {
     abi_decode_data_address_bool_mem_function,
-    abi_functions::decode_data(&[Base::Bool, Base::Address], AbiDecodeLocation::Memory)
+    abi_functions::decode_data(&[AbiType::Bool, AbiType::Address], AbiDecodeLocation::Memory)
 }
 test_yulgen! {
     abi_decode_data_u256_bytes_string_bool_address_bytes_calldata_function,
     abi_functions::decode_data(&[
-        FixedSize::u256(),
-        FixedSize::Array(Array { inner: Base::Numeric(Integer::U8), size: 100 }),
-        FixedSize::String(FeString { max_size: 42 }),
-        FixedSize::bool(),
-        FixedSize::address(),
-        FixedSize::Array(Array { inner: Base::Numeric(Integer::U8), size: 100 }),
+        AbiType::Uint { size: 32 },
+        AbiType::Bytes { size: 100 },
+        AbiType::String { max_size: 42 },
+        AbiType::Bool,
+        AbiType::Address,
+        AbiType::Bytes { size: 100 },
     ], AbiDecodeLocation::Calldata)
 }
 test_yulgen! {
@@ -185,16 +186,16 @@ test_yulgen! {
 // ABI operations
 test_yulgen! {
     encode_u256_operation,
-    abi_operations::encode(&[U256], vec![expression! { 42 }])
+    abi_operations::encode(&[AbiType::Uint { size: 32 }], vec![expression! { 42 }])
 }
 test_yulgen! {
     encode_size_u256_operation,
-    abi_operations::encoding_size(&[U256], vec![expression! { 42 }])
+    abi_operations::encoding_size(&[AbiType::Uint { size: 32 }], vec![expression! { 42 }])
 }
 test_yulgen! {
     decode_string_calldata_operation,
     abi_operations::decode_data(
-        &[FeString { max_size: 26 }],
+        &[AbiType::String { max_size: 26 }],
         expression! { 42 },
         expression! { 10 },
         AbiDecodeLocation::Calldata
@@ -205,20 +206,17 @@ test_yulgen! {
 test_yulgen! {
     encode_name,
     abi_names::encode(&[
-        FixedSize::Base(U256),
-        FixedSize::Array(Array {
-            inner: Base::Numeric(Integer::U8),
-            size: 100
-        })
+        AbiType::Uint { size: 32 },
+        AbiType::Bytes { size: 100 }
     ])
 }
 test_yulgen! {
     decode_data_name_u256_calldata_name,
-    abi_names::decode_data(&[U256], AbiDecodeLocation::Calldata)
+    abi_names::decode_data(&[AbiType::Uint { size: 32 }], AbiDecodeLocation::Calldata)
 }
 test_yulgen! {
     decode_data_name_string_mem_name,
-    abi_names::decode_data(&[FeString { max_size: 42 }], AbiDecodeLocation::Memory)
+    abi_names::decode_data(&[AbiType::String { max_size: 42 }], AbiDecodeLocation::Memory)
 }
 
 // revert functions
