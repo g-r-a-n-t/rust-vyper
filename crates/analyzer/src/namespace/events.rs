@@ -17,6 +17,14 @@ impl EventDef {
         }
     }
 
+    pub fn all_field_types(&self) -> Vec<FixedSize> {
+        self.fields
+            .to_owned()
+            .into_iter()
+            .map(|(_, typ)| typ)
+            .collect()
+    }
+
     /// The event's indexed fields.
     ///
     /// These should be logged as additional topics.
@@ -58,11 +66,6 @@ impl EventDef {
         self.fields.iter().any(|(name, _)| name == field_name)
     }
 }
-
-// fn build_event_topic(name: &str, fields: Vec<String>) -> String {
-//     let signature = format!("{}({})", name, fields.join(","));
-//     keccak::full(signature.as_bytes())
-// }
 
 #[cfg(test)]
 mod tests {

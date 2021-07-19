@@ -104,6 +104,13 @@ where
     types.iter().map(|typ| typ.into()).collect()
 }
 
+pub fn to_abi_selector_names<'a, T>(types: &'a [T]) -> Vec<String>
+    where
+        &'a T: Into<AbiType>,
+{
+    types.iter().map(|typ| typ.into().selector_name()).collect()
+}
+
 impl AbiType {
     /// The number of bytes used to encode the type's head.
     pub fn head_size(&self) -> usize {
@@ -156,8 +163,8 @@ impl AbiType {
                     .collect::<Vec<_>>()
                     .join(",")
             ),
-            AbiType::Uint { .. } => "uint".to_string(),
-            AbiType::Int { .. } => "int".to_string(),
+            AbiType::Uint { size } => format!("uint{}", 8 * size),
+            AbiType::Int { size } => format!("int{}", 8 * size),
             AbiType::Bool => "bool".to_string(),
             AbiType::Address => "address".to_string(),
             AbiType::String { .. } => "string".to_string(),
