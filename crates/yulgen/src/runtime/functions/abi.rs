@@ -2,9 +2,8 @@ use crate::constants::PANIC_INVALID_ABI_DATA;
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
 use crate::operations::abi::EncodingSize;
-use crate::types::AbiType;
+use crate::types::{AbiType, AbiDecodeLocation};
 use crate::utils::ceil_32;
-use fe_analyzer::namespace::types::AbiDecodeLocation;
 use yultsur::*;
 
 /// Return all abi runtime functions

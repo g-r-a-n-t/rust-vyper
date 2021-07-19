@@ -1,9 +1,9 @@
 pub mod abi_dispatcher;
 pub mod functions;
-use crate::types::{to_abi_types, AbiType};
+use crate::types::{to_abi_types, AbiType, AbiDecodeLocation};
 use crate::Context;
 use fe_analyzer::context::FunctionAttributes;
-use fe_analyzer::namespace::types::{AbiDecodeLocation, Contract};
+use fe_analyzer::namespace::types::{Contract};
 use fe_parser::ast as fe;
 use fe_parser::node::Node;
 use yultsur::*;
@@ -122,7 +122,7 @@ pub fn build(context: &Context, contract: &Node<fe::Contract>) -> Vec<yul::State
             .assert_strings
             .clone()
             .into_iter()
-            .map(|val| functions::revert::generate_revert_fn_for_assert(&[val.into()]))
+            .map(|val| functions::revert::generate_revert_fn_for_assert(&[AbiType::from(&val)]))
             .collect::<Vec<_>>();
 
         let revert_calls = context

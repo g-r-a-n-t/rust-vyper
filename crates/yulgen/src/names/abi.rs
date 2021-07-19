@@ -1,5 +1,4 @@
-use crate::types::AbiType;
-use fe_analyzer::namespace::types::AbiDecodeLocation;
+use crate::types::{AbiType, AbiDecodeLocation};
 use std::borrow::Borrow;
 use yultsur::*;
 

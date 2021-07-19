@@ -1,7 +1,7 @@
 use fe_analyzer::context::FunctionAttributes;
 use fe_analyzer::namespace::events::EventDef;
 use fe_analyzer::namespace::types::{
-    AbiDecodeLocation, Base, FeString, FixedSize, Integer, Struct, U256,
+    Base, FeString, FixedSize, Integer, Struct, U256,
 };
 use fe_yulgen::constructor;
 use fe_yulgen::names::abi as abi_names;
@@ -10,7 +10,7 @@ use fe_yulgen::runtime::abi_dispatcher;
 use fe_yulgen::runtime::functions::{
     abi as abi_functions, revert as revert_functions, structs as structs_functions,
 };
-use fe_yulgen::types::AbiType;
+use fe_yulgen::types::{AbiType, AbiDecodeLocation};
 use insta::assert_display_snapshot;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yultsur::*;
@@ -220,4 +220,7 @@ test_yulgen! {
 }
 
 // revert functions
-test_yulgen! { revert_string_error, revert_functions::generate_revert_fn_for_assert(&[FeString { max_size: 3}.into()]) }
+test_yulgen! {
+    revert_string_error,
+    revert_functions::generate_revert_fn_for_assert(&[AbiType::String { max_size: 3 }])
+}

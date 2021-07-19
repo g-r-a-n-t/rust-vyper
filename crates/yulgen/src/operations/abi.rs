@@ -1,8 +1,7 @@
 use crate::names::abi as abi_names;
 use crate::operations::data as data_operations;
-use crate::types::AbiType;
+use crate::types::{AbiType, AbiDecodeLocation};
 use crate::utils::ceil_32;
-use fe_analyzer::namespace::types::AbiDecodeLocation;
 use yultsur::*;
 
 /// The size of an encoding known at compile-time.

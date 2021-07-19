@@ -256,11 +256,10 @@ note:
    ┌─ features/strings.fe:12:9
    │
 12 │         emit MyEvent(s2, u, s1, s3, a, s4="static string", s5=String<100>("foo"))
-   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ attributes hash: 14401346865018949396
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ attributes hash: 2616592871617117419
    │
    = EventDef {
          name: "MyEvent",
-         topic: "0x3c1df123f6496961966c7a4f1c9f9d6931ad63ae890874ecf4470db31dfaed78",
          fields: [
              (
                  "s2",
@@ -456,7 +455,7 @@ note:
    · │
 20 │ │     pub def return_casted_static_string() -> String<100>:
 21 │ │         return String<100>("foo")
-   │ ╰─────────────────────────────────^ attributes hash: 2821469132888555159
+   │ ╰─────────────────────────────────^ attributes hash: 18169323428627881712
    │  
    = ContractAttributes {
          public_functions: [
@@ -560,7 +559,6 @@ note:
          events: [
              EventDef {
                  name: "MyEvent",
-                 topic: "0x3c1df123f6496961966c7a4f1c9f9d6931ad63ae890874ecf4470db31dfaed78",
                  fields: [
                      (
                          "s2",
@@ -662,11 +660,10 @@ note:
   · │
 8 │ │         s4: String<13>
 9 │ │         s5: String<100>
-  │ ╰───────────────────────^ attributes hash: 14401346865018949396
+  │ ╰───────────────────────^ attributes hash: 2616592871617117419
   │  
   = EventDef {
         name: "MyEvent",
-        topic: "0x3c1df123f6496961966c7a4f1c9f9d6931ad63ae890874ecf4470db31dfaed78",
         fields: [
             (
                 "s2",

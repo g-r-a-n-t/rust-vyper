@@ -91,6 +91,12 @@ pub enum AbiType {
     Bytes { size: usize },
 }
 
+#[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Copy)]
+pub enum AbiDecodeLocation {
+    Calldata,
+    Memory,
+}
+
 pub fn to_abi_types<'a, T>(types: &'a [T]) -> Vec<AbiType>
 where
     &'a T: Into<AbiType>,
@@ -136,6 +142,26 @@ impl AbiType {
             AbiType::Address => false,
             AbiType::String { .. } => true,
             AbiType::Bytes { .. } => true,
+        }
+    }
+
+    pub fn selector_name(&self) -> String {
+        match self {
+            AbiType::StaticArray { inner, size } => format!("{}[{}]", inner.selector_name(), size),
+            AbiType::Tuple { components } => format!(
+                "({})",
+                components
+                    .iter()
+                    .map(|component| component.selector_name())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+            AbiType::Uint { .. } => "uint".to_string(),
+            AbiType::Int { .. } => "int".to_string(),
+            AbiType::Bool => "bool".to_string(),
+            AbiType::Address => "address".to_string(),
+            AbiType::String { .. } => "string".to_string(),
+            AbiType::Bytes { .. } => "bytes".to_string(),
         }
     }
 }

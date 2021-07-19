@@ -1,9 +1,9 @@
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
-use crate::types::{to_abi_types, AbiType};
+use crate::types::{to_abi_types, AbiType, AbiDecodeLocation};
 use fe_abi::utils as abi_utils;
 use fe_analyzer::context::FunctionAttributes;
-use fe_analyzer::namespace::types::{AbiDecodeLocation, AbiEncoding, FixedSize};
+use fe_analyzer::namespace::types::{FixedSize};
 use yultsur::*;
 
 /// Builds a switch statement that dispatches calls to the contract.
@@ -25,7 +25,7 @@ pub fn dispatcher(attributes: &[FunctionAttributes]) -> yul::Statement {
 }
 
 fn dispatch_arm(attributes: FunctionAttributes) -> yul::Case {
-    let selector = selector(&attributes.name, &attributes.param_types());
+    let selector = selector(&attributes.name, &to_abi_types(&attributes.param_types()));
 
     let (param_idents, param_exprs) = abi_names::vals("call", attributes.params.len());
 
@@ -78,10 +78,10 @@ fn dispatch_arm(attributes: FunctionAttributes) -> yul::Case {
     }
 }
 
-fn selector(name: &str, params: &[FixedSize]) -> yul::Literal {
+fn selector(name: &str, params: &[AbiType]) -> yul::Literal {
     let params = params
         .iter()
-        .map(|param| param.abi_selector_name())
+        .map(|param| param.selector_name())
         .collect::<Vec<String>>();
 
     literal! { (abi_utils::func_selector(name, &params)) }
@@ -91,6 +91,7 @@ fn selector(name: &str, params: &[FixedSize]) -> yul::Literal {
 mod tests {
     use crate::runtime::abi_dispatcher::selector;
     use fe_analyzer::namespace::types::{FixedSize, U256};
+    use crate::types::AbiType;
 
     #[test]
     fn test_selector_literal_basic() {
@@ -100,7 +101,7 @@ mod tests {
     #[test]
     fn test_selector_literal() {
         assert_eq!(
-            selector("bar", &[FixedSize::Base(U256)]).to_string(),
+            selector("bar", &[AbiType::Uint { size: 32 }]).to_string(),
             String::from("0x0423a132"),
         )
     }

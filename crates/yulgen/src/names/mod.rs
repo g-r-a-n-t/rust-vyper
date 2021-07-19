@@ -1,6 +1,7 @@
 use fe_abi::utils as abi_utils;
-use fe_analyzer::namespace::types::{AbiEncoding, Integer, SafeNames};
+use fe_analyzer::namespace::types::{Integer, SafeNames};
 use yultsur::*;
+use crate::types::AbiType;
 
 pub mod abi;
 
@@ -63,25 +64,15 @@ pub fn var_name(name: &str) -> yul::Identifier {
 }
 
 /// Generate a revert function name for the name `Error` and a given set of types
-pub fn error_revert_name<T: AbiEncoding + SafeNames>(types: &[T]) -> yul::Identifier {
+pub fn error_revert_name(types: &[AbiType]) -> yul::Identifier {
     revert_name("Error", types)
 }
 
 /// Generates a revert function name for a given name and types
-pub fn revert_name<T: AbiEncoding + SafeNames>(name: &str, types: &[T]) -> yul::Identifier {
-    let type_names = types
-        .iter()
-        .map(|param| param.lower_snake())
-        .collect::<Vec<String>>();
+pub fn revert_name(name: &str, types: &[AbiType]) -> yul::Identifier {
+    let selector = abi_utils::func_selector(name, &[]);
 
-    let abi_names = types
-        .iter()
-        .map(|param| param.abi_selector_name())
-        .collect::<Vec<String>>();
-
-    let selector = abi_utils::func_selector(name, &abi_names);
-
-    let name = format!("revert_with_{}_{}", selector, &type_names.join("_"));
+    let name = format!("revert_with_{}", selector);
 
     identifier! { (name) }
 }

@@ -72,7 +72,8 @@ pub fn mcopym<T: EvmSized>(typ: T, ptr: yul::Expression) -> yul::Expression {
 
 /// Logs an event.
 pub fn emit_event(event: EventDef, vals: Vec<yul::Expression>) -> yul::Statement {
-    let mut topics = vec![literal_expression! { (event.topic) }];
+    // let mut topics = vec![literal_expression! { (event.topic) }];
+    let mut topics = vec![expression! { 0 }];
 
     let (field_vals, field_types): (Vec<yul::Expression>, Vec<FixedSize>) = event
         .non_indexed_field_types_with_index()

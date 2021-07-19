@@ -1,15 +1,12 @@
 use crate::names;
 use crate::names::abi as abi_names;
-use crate::types::to_abi_types;
+use crate::types::{to_abi_types, AbiType};
 use fe_abi::utils as abi_utils;
-use fe_analyzer::namespace::types::{AbiEncoding, FixedSize, Struct, U256};
+use fe_analyzer::namespace::types::{FixedSize, Struct, U256};
 use yultsur::*;
 
-fn selector(name: &str, params: &[FixedSize]) -> yul::Expression {
-    let params = params
-        .iter()
-        .map(|param| param.abi_selector_name())
-        .collect::<Vec<String>>();
+fn selector(name: &str, params: &[AbiType]) -> yul::Expression {
+    let params: Vec<_> = params.iter().map(|param| param.selector_name()).collect();
 
     literal_expression! {(abi_utils::func_selector(name, &params))}
 }
@@ -18,19 +15,19 @@ fn selector(name: &str, params: &[FixedSize]) -> yul::Expression {
 /// given set of params.
 /// NOTE: This is currently used for `assert False, "message"` statements which are
 /// encoded as `Error(msg="message")`. This will be removed in the future.
-pub fn generate_revert_fn_for_assert(params: &[FixedSize]) -> yul::Statement {
-    generate_revert_fn("Error", params, params)
+pub fn generate_revert_fn_for_assert(params: &[AbiType]) -> yul::Statement {
+    generate_revert_fn("Error", params)
 }
 
 /// Generate a YUL function to revert with a specific struct used as error data
 pub fn generate_struct_revert(val: &Struct) -> yul::Statement {
-    let struct_fields = val.get_field_types();
-    generate_revert_fn(&val.name, &[FixedSize::Struct(val.clone())], &struct_fields)
+    let struct_fields = to_abi_types(&val.get_field_types());
+    generate_revert_fn(&val.name, &struct_fields)
 }
 
 /// Generate a YUL function to revert with panic codes
 pub fn generate_revert_fn_for_panic() -> yul::Statement {
-    let selector = selector("Panic", &[FixedSize::Base(U256)]);
+    let selector = selector("Panic", &[AbiType::Uint { size: 32 }]);
 
     return function_definition! {
         function revert_with_panic(error_code) {
@@ -42,16 +39,12 @@ pub fn generate_revert_fn_for_panic() -> yul::Statement {
 }
 
 /// Generate a YUL function to revert with data
-pub fn generate_revert_fn(
-    name: &str,
-    encoding_params: &[FixedSize],
-    selector_params: &[FixedSize],
-) -> yul::Statement {
-    let abi_encode_fn = abi_names::encode(&to_abi_types(&encoding_params));
+pub fn generate_revert_fn(name: &str, params: &[AbiType]) -> yul::Statement {
+    let abi_encode_fn = abi_names::encode(params);
 
-    let function_name = names::revert_name(name, selector_params);
+    let function_name = names::revert_name(name, params);
 
-    let selector = selector(name, &selector_params);
+    let selector = selector(name, &params);
 
     return function_definition! {
         function [function_name](data_ptr, size) {

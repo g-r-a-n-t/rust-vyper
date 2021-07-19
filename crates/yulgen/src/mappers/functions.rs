@@ -135,7 +135,7 @@ fn revert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
                 let revert_data = expressions::expr(context, error_expr);
                 let size =
                     abi_operations::encoding_size(&[AbiType::from(val)], vec![revert_data.clone()]);
-                let revert_fn = names::revert_name(&val.name, &val.get_field_types());
+                let revert_fn = names::revert_name(&val.name, &to_abi_types(&val.get_field_types()));
 
                 return statement! {
                     ([revert_fn]([revert_data], [size]))
@@ -183,7 +183,7 @@ fn assert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
                         abi_operations::encoding_size(&[AbiType::from(str)], vec![msg.clone()]);
                     let fixed_size = FixedSize::String(str.clone());
                     context.assert_strings.insert(str.clone());
-                    let revert_fn = names::error_revert_name(&[fixed_size]);
+                    let revert_fn = names::error_revert_name(&[AbiType::from(&fixed_size)]);
 
                     return statement! {
                         if (iszero([test])) {

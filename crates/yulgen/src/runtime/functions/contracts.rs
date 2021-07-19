@@ -1,10 +1,9 @@
 use crate::names;
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
-use crate::types::to_abi_types;
+use crate::types::{to_abi_types, AbiDecodeLocation};
 use fe_abi::utils as abi_utils;
 use fe_analyzer::namespace::types::Contract;
-use fe_analyzer::namespace::types::{AbiDecodeLocation, AbiEncoding};
 use yultsur::*;
 
 /// Return all contacts runtime functions
@@ -22,10 +21,9 @@ pub fn calls(contract: Contract) -> Vec<yul::Statement> {
         .map(|function| {
             // get the name of the call function and its parameters
             let function_name = names::contract_call(&contract_name, &function.name);
-            let param_names = function
-                .param_types()
+            let param_names = to_abi_types(&function.param_types())
                 .iter()
-                .map(|typ| typ.abi_selector_name())
+                .map(|typ| typ.selector_name())
                 .collect::<Vec<String>>();
 
             // create a pair of identifiers and expressions for the parameters
