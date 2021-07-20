@@ -1,7 +1,8 @@
+use crate::names::abi as abi_names;
+use crate::types::{to_abi_selector_names, AbiType};
 use fe_abi::utils as abi_utils;
 use fe_analyzer::namespace::types::{Integer, SafeNames};
 use yultsur::*;
-use crate::types::AbiType;
 
 pub mod abi;
 
@@ -70,9 +71,7 @@ pub fn error_revert_name(types: &[AbiType]) -> yul::Identifier {
 
 /// Generates a revert function name for a given name and types
 pub fn revert_name(name: &str, types: &[AbiType]) -> yul::Identifier {
-    let selector = abi_utils::func_selector(name, &[]);
-
-    let name = format!("revert_with_{}", selector);
+    let name = format!("revert_with_{}_{}", name, abi_names::types(types));
 
     identifier! { (name) }
 }

@@ -123,7 +123,7 @@ fn expr(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
 
 fn revert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
     if let fe::FuncStmt::Revert { error } = &stmt.kind {
-        if let Some(error_expr) = error {
+        return if let Some(error_expr) = error {
             let error_attributes = context
                 .analysis
                 .get_expression(error_expr)
@@ -133,17 +133,17 @@ fn revert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
                 context.revert_errors.insert(val.clone());
 
                 let revert_data = expressions::expr(context, error_expr);
-                let size =
-                    abi_operations::encoding_size(&[AbiType::from(val)], vec![revert_data.clone()]);
-                let revert_fn = names::revert_name(&val.name, &to_abi_types(&val.get_field_types()));
+                let revert_fn = names::revert_name(&val.name, &[AbiType::from(val)]);
 
-                return statement! {
-                    ([revert_fn]([revert_data], [size]))
-                };
+                statement! {
+                    ([revert_fn]([revert_data]))
+                }
+            } else {
+                panic!("trying to revert with non-struct expression")
             }
-        }
-
-        return statement! { revert(0, 0) };
+        } else {
+            statement! { revert(0, 0) }
+        };
     }
 
     unreachable!()
@@ -179,15 +179,13 @@ fn assert(context: &mut Context, stmt: &Node<fe::FuncStmt>) -> yul::Statement {
                     .expect("missing expression");
 
                 if let Type::String(str) = &msg_attributes.typ {
-                    let size =
-                        abi_operations::encoding_size(&[AbiType::from(str)], vec![msg.clone()]);
                     let fixed_size = FixedSize::String(str.clone());
                     context.assert_strings.insert(str.clone());
                     let revert_fn = names::error_revert_name(&[AbiType::from(&fixed_size)]);
 
                     return statement! {
                         if (iszero([test])) {
-                            ([revert_fn]([msg], [size]))
+                            ([revert_fn]([msg]))
                         }
                     };
                 }

@@ -1,9 +1,9 @@
 use crate::names::abi as abi_names;
 use crate::operations::abi as abi_operations;
-use crate::types::{to_abi_types, AbiType, AbiDecodeLocation};
+use crate::types::{to_abi_types, AbiDecodeLocation, AbiType};
 use fe_abi::utils as abi_utils;
 use fe_analyzer::context::FunctionAttributes;
-use fe_analyzer::namespace::types::{FixedSize};
+use fe_analyzer::namespace::types::FixedSize;
 use yultsur::*;
 
 /// Builds a switch statement that dispatches calls to the contract.
@@ -90,8 +90,8 @@ fn selector(name: &str, params: &[AbiType]) -> yul::Literal {
 #[cfg(test)]
 mod tests {
     use crate::runtime::abi_dispatcher::selector;
-    use fe_analyzer::namespace::types::{FixedSize, U256};
     use crate::types::AbiType;
+    use fe_analyzer::namespace::types::{FixedSize, U256};
 
     #[test]
     fn test_selector_literal_basic() {

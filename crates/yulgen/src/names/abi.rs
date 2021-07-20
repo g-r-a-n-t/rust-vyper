@@ -1,4 +1,4 @@
-use crate::types::{AbiType, AbiDecodeLocation};
+use crate::types::{AbiDecodeLocation, AbiType};
 use std::borrow::Borrow;
 use yultsur::*;
 
@@ -137,7 +137,7 @@ fn typ(_typ: &AbiType) -> String {
     }
 }
 
-fn types(types: &[AbiType]) -> String {
+pub fn types(types: &[AbiType]) -> String {
     types.iter().map(typ).collect::<Vec<_>>().join("_")
 }
 

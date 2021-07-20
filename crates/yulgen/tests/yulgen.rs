@@ -1,8 +1,6 @@
 use fe_analyzer::context::FunctionAttributes;
 use fe_analyzer::namespace::events::EventDef;
-use fe_analyzer::namespace::types::{
-    Base, FeString, FixedSize, Integer, Struct, U256,
-};
+use fe_analyzer::namespace::types::{Base, FeString, FixedSize, Integer, Struct, U256};
 use fe_yulgen::constructor;
 use fe_yulgen::names::abi as abi_names;
 use fe_yulgen::operations::{abi as abi_operations, data as data_operations};
@@ -10,7 +8,7 @@ use fe_yulgen::runtime::abi_dispatcher;
 use fe_yulgen::runtime::functions::{
     abi as abi_functions, revert as revert_functions, structs as structs_functions,
 };
-use fe_yulgen::types::{AbiType, AbiDecodeLocation};
+use fe_yulgen::types::{AbiDecodeLocation, AbiType};
 use insta::assert_display_snapshot;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yultsur::*;

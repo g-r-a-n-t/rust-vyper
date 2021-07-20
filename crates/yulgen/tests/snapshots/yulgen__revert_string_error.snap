@@ -1,10 +1,10 @@
 ---
 source: crates/yulgen/tests/yulgen.rs
-expression: "revert_functions::generate_revert_fn_for_assert(&[FeString{max_size:\n                                                               3,}.into()])"
+expression: "revert_functions::generate_revert_fn_for_assert(&[AbiType::String{max_size:\n                                                                      3,}])"
 
 ---
-function revert_with_0x08c379a0_string_3(data_ptr, size) {
+function revert_with_Error_string_3(params_val_0) {
     let ptr := alloc_mstoren(0x08c379a0, 4)
-    pop(abi_encode_string_3(data_ptr))
-    revert(ptr, add(4, size))
+    pop(abi_encode_string_3(params_val_0))
+    revert(ptr, add(4, add(64, ceil32(mload(params_val_0)))))
 }

@@ -1,5 +1,5 @@
 use crate::operations::abi as abi_operations;
-use crate::types::{to_abi_types, EvmSized, to_abi_selector_names};
+use crate::types::{to_abi_selector_names, to_abi_types, EvmSized};
 use fe_analyzer::namespace::events::EventDef;
 use fe_analyzer::namespace::types::{Array, FixedSize};
 use yultsur::*;
@@ -72,9 +72,10 @@ pub fn mcopym<T: EvmSized>(typ: T, ptr: yul::Expression) -> yul::Expression {
 
 /// Logs an event.
 pub fn emit_event(event: EventDef, vals: Vec<yul::Expression>) -> yul::Statement {
+    // the first topic is the hash of the event signature
     let topic_0 = fe_abi::utils::event_topic(
         &event.name,
-        &to_abi_selector_names(&event.all_field_types())
+        &to_abi_selector_names(&event.all_field_types()),
     );
     let mut topics = vec![literal_expression! { (topic_0) }];
 

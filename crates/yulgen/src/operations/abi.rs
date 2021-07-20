@@ -1,6 +1,6 @@
 use crate::names::abi as abi_names;
 use crate::operations::data as data_operations;
-use crate::types::{AbiType, AbiDecodeLocation};
+use crate::types::{AbiDecodeLocation, AbiType};
 use crate::utils::ceil_32;
 use yultsur::*;
 

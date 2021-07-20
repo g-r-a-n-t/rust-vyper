@@ -105,8 +105,8 @@ where
 }
 
 pub fn to_abi_selector_names<'a, T>(types: &'a [T]) -> Vec<String>
-    where
-        &'a T: Into<AbiType>,
+where
+    &'a T: Into<AbiType>,
 {
     types.iter().map(|typ| typ.into().selector_name()).collect()
 }
@@ -238,5 +238,11 @@ impl From<&FeString> for AbiType {
         AbiType::String {
             max_size: string.max_size,
         }
+    }
+}
+
+impl From<&AbiType> for AbiType {
+    fn from(typ: &AbiType) -> Self {
+        typ.to_owned()
     }
 }
